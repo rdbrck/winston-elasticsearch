@@ -25,7 +25,10 @@ const BulkWriter = function BulkWriter(transport, client, options) {
 };
 
 BulkWriter.prototype.start = function start() {
-  this.checkEsConnection();
+  // PATCHED: Don't perform health checks, instead start flushing the queue right away.
+  // this.checkEsConnection();
+  this.running = true;
+  this.tick();
   debug('started');
 };
 
@@ -69,7 +72,8 @@ BulkWriter.prototype.flush = function flush() {
     return new Promise((resolve) => {
       // pause the buffering process when there's no more bulk to flush
       // thus allowing the process to be terminated
-      this.running = false;
+      // PATCHED: Don't rely on health checks to get writer running again.
+      // this.running = false;
       return resolve();
     });
   }
@@ -163,8 +167,9 @@ BulkWriter.prototype.write = function write(body) {
         thiz.bulk = newBody.concat(thiz.bulk);
       }
       debug('error occurred during writing', e);
-      this.stop();
-      this.checkEsConnection();
+      // PATCHED: Dont stop if we hit an error, just try again next time we flush.
+      // this.stop();
+      // this.checkEsConnection();
       thiz.transport.emit('warning', e);
     });
 };
