@@ -21,7 +21,10 @@ const BulkWriter = function BulkWriter(transport, client, options) {
 };
 
 BulkWriter.prototype.start = function start() {
-  this.checkEsConnection();
+  // PATCHED: Don't perform health checks, instead start flushing the queue right away.
+  // this.checkEsConnection();
+  this.running = true;
+  this.tick();
   debug('started');
 };
 
@@ -116,8 +119,9 @@ BulkWriter.prototype.write = function write(body) {
       thiz.bulk = newBody.concat(thiz.bulk);
     }
     debug('error occurred', e);
-    this.stop();
-    this.checkEsConnection();
+    // PATCHED: Dont stop if we hit an error, just try again next time we flush.
+    // this.stop();
+    // this.checkEsConnection();
     // eslint-disable-next-line no-console
     console.log(e);
     // Rethrow in next run loop to prevent UnhandledPromiseRejectionWarning
